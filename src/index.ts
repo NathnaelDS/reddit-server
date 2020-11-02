@@ -13,7 +13,12 @@ import cors from "cors";
 import { createConnection } from "typeorm";
 import { User } from "./entities/User";
 import { Post } from "./entities/Post";
+import path from "path";
+import { Upvote } from "./entities/Upvote";
+import { createUserLoader } from "./utils/createUserLoader";
+import { createUpvoteLoader } from "./utils/createUpvoteLoader";
 
+// huh
 const main = async () => {
   const conn = await createConnection({
     type: "postgres",
@@ -22,9 +27,12 @@ const main = async () => {
     password: "postgres",
     logging: true,
     synchronize: true,
-    entities: [User, Post],
+    migrations: [path.join(__dirname, "./migrations/*")],
+    entities: [User, Post, Upvote],
   });
-  // conn.
+  await conn.runMigrations();
+
+  // await Post.delete({});
 
   const app = express();
 
@@ -62,7 +70,13 @@ const main = async () => {
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({ req, res }) => ({ req, res, redis }),
+    context: ({ req, res }) => ({
+      req,
+      res,
+      redis,
+      userLoader: createUserLoader(),
+      upvoteLoader: createUpvoteLoader(),
+    }),
   });
 
   apolloServer.applyMiddleware({
